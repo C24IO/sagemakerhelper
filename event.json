@@ -1,0 +1,32 @@
+{
+    "CodePipeline.job": {
+        "data": {
+            "artifactCredentials": {
+                "secretAccessKey": "xQia8FJ10LMnzhbriAiPgAj9KOHiVtyyQJZxESjk",
+                "accessKeyId": "ASIAITNRUE4TFOVR5X5Q",
+                "sessionToken": "AgoGb3JpZ2luEDUaCXVzLXdlc3QtMiKAAqef3myEMNTe4ek20x3OO11daoN3Bpx+p8hLt93Eg9MVpP0ecxwx0jDz3vO8shiWPck6apA5DA/1vBekIZHdWLxVWeRbEgrsXecDKcXeOX4hXDp6EWvjnsljQKTh7CAG6tondRpvzNfJ/bjRZjddV0D4sgOroxUMzkm/lP8m8c5th5DNgItrHrHtYL5Ap2mYe1dNs6mT4JHy6qICgmVI0JXMEFOMU8bOA6hu3FHFqv63ju3yu5kkuSOj60rHrqMfQja3aBcShdNqiPvXAK8H3U4t2rrr++pwmjGK2y22NtDu+PpLrfv6ylVonitE7uf96gbky5kt43BCVBKB6l+ppiMqhAUI2///////////ARABGgwwMDcwMzg3MzIxNzciDKej+qa7QdRiZj2RECrYBNvlhmChuLbzl31J7KD5LBACWvvmqQfXypoWw8PPp72sznZ0Q/Srom3fnIG0Dx9TVm9yXHdOdLl3DaNYyiDr4qCmuc0JvVNlw4cGgc3uyiOcTgxi8whmnmWCUYVnnV/6gqV7Upxg+Ns9svTO8U/CVt6WYHnwkrfEgMv9CGSeb5pB9cVLOA2gRuMdjmbEgEADaZjLE3SJ0i5N4fPF9JHsETjJ3jzu3bMULvFgrJ9D3g8aKjvq+NmZyqF99GXw8NnPESt2fhNXIzMzfyK8igvf2pAjfiQa7Y1Ky7k+gsVuAvb+d9nUMJQwxlLi6dHtGc6g65BZOCCYg1zPjFEtaAokiSMbpbFFr8kGWwVSgvJrbUGTI43ONO/4DHDZE/3Tyfd1BwNyXvcfJCCM0IvepixiP5PtAj9x3+V90Uozfc/+yXQV+JP2fxEp6+qV2sobUpa/ZJ+2PadT13PdFod9jqZkTer7lTemw9AjxmHLxfQAYf3f5cjd9U86Y0GrKxBVsEwyNUdB3huBetqOlB9A6/z3IZol3ZFMM+mV3bcL7u0us3JgOirbhaxe27WFEDsXEweOJmreLvRvWkGpHIqnaQI+VxRmB60CuCDF8nzqyoEgvNDxQznDKbTsGUWC+7CXqjP7UQ9YYYI1GlKsuzUyj3ITfQvm4AIqBm711WoafXXxK5CPfmhVBnZI/8VnCI1YC4t4Jb+f/kk1RrHs9G95NRQ4fx7wJYOw8gqUTI74KVU1FywR0tadCdAsTooD5h8+OyG6C05h3QQColWHYXdKOsax+9/PSg9IR4ucIzC21YjTBQ=="
+            },
+            "actionConfiguration": {
+                "configuration": {
+                    "FunctionName": "sage_dispatch"
+                }
+            },
+            "inputArtifacts": [
+                {
+                    "location": {
+                        "type": "S3",
+                        "s3Location": {
+                            "objectKey": "ml_pipeline/output/B5Wnugb",
+                            "bucketName": "codepipeline-us-west-2-007038732177"
+                        }
+                    },
+                    "name": "output",
+                    "revision": null
+                }
+            ],
+            "outputArtifacts": []
+        },
+        "id": "6e6e454b-2896-4d0c-bdb3-3699ab1177aa",
+        "accountId": "007038732177"
+    }
+}

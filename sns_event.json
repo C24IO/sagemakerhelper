@@ -1,0 +1,20 @@
+{
+  "Records": [{
+    "EventVersion": "1.0",
+    "EventSubscriptionArn": "arn:aws:sns:us-west-2:007038732177:code_commit:f1a13274-af91-41b4-b8c7-dde0ab58dcf6",
+    "EventSource": "aws:sns",
+    "Sns": {
+      "SignatureVersion": "1",
+      "Timestamp": "2018-01-19T04:40:48.925Z",
+      "Signature": "hsVGWEffgJzD4W/vQ9tmKSlNgfUEQnwWjzbjIHnvjIdldUjuMN+6heN+cTFhWNha+3je+4TFFRCkIcaR2Eva+tVxr6ha36HCRBMcwQafslNZFeBDascQfp4gstxVOS8tzgUlaqTekfcsBGEb9z5vtVQh4mkrMcPIMZ+xpgqNTPCOAq8B3YiAXbyDffPPu0eEFD+3fNQ1VY/DDItfLSW3i6EfEIJWgToIKC3YPCG+oq+j7NeglZz+g57wnn5DC6YDjLIweiCja3QdSsVm69b8hOZhRUNOWoWs4+R1PV7jey6bZqQxQLOnwPgOesWVkNx24FbVWiH1Og8WTFiM7U2lug==",
+      "SigningCertUrl": "https://sns.us-west-2.amazonaws.com/SimpleNotificationService-433026a4050d206028891664da859041.pem",
+      "MessageId": "20b31fa6-c3d3-515f-a02e-4d7dbac37971",
+      "Message": "{\"Records\":[{\"awsRegion\":\"us-west-2\",\"codecommit\":{\"references\":[{\"commit\":\"d74c5af072e904aab942fc68d8f8a1d90743f6fc\",\"ref\":\"refs/heads/master\"}]},\"eventId\":\"77643256-f17a-4886-abb5-f7ca7e654173\",\"eventName\":\"ReferenceChanges\",\"eventPartNumber\":1,\"eventSource\":\"aws:codecommit\",\"eventSourceARN\":\"arn:aws:codecommit:us-west-2:007038732177:census\",\"eventTime\":\"2018-01-19T04:40:48.868+0000\",\"eventTotalParts\":1,\"eventTriggerConfigId\":\"c06e3ba4-a615-4f9d-bfd0-accd90a336d3\",\"eventTriggerName\":\"commits\",\"eventVersion\":\"1.0\",\"userIdentityARN\":\"arn:aws:iam::007038732177:user/macbookpro\"}]}",
+      "MessageAttributes": {},
+      "Type": "Notification",
+      "UnsubscribeUrl": "https://sns.us-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-west-2:007038732177:code_commit:f1a13274-af91-41b4-b8c7-dde0ab58dcf6",
+      "TopicArn": "arn:aws:sns:us-west-2:007038732177:code_commit",
+      "Subject": "UPDATE: AWS CodeCommit us-west-2 push: census"
+    }
+  }]
+}
