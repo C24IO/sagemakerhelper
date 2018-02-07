@@ -1,0 +1,7 @@
+{
+"actionTypeId": {
+"category": "Invoke", 
+"owner": "AWS", 
+"version": "1", 
+"provider": "Lambda"
+}}
