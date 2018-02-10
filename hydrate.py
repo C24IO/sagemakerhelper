@@ -122,7 +122,7 @@ CodepipelineExecutionRole = t.add_resource(Role(
                     "Resource": "*",
                     "Effect": "Allow"
                 },
-{
+                {
                     "Action": [
                         "lambda:invokefunction",
                         "lambda:listfunctions"
@@ -159,37 +159,40 @@ CodepipelineExecutionRole = t.add_resource(Role(
                     "Resource": [GetAtt("Repository", "Arn")],
                     "Effect": "Allow"
                 },
-                {"Action": [
-                    "codebuild:BatchGetBuilds",
-                    "codebuild:StartBuild",
-                    "ecr:GetAuthorizationToken",
-                    "iam:PassRole"
+                {
+                    "Action": [
+                        "codebuild:BatchGetBuilds",
+                        "codebuild:StartBuild",
+                        "ecr:GetAuthorizationToken",
+                        "iam:PassRole"
                 ],
                     "Resource": "*",
                     "Effect": "Allow"
                 },
-                {"Action": [
-                    "ecr:GetDownloadUrlForLayer",
-                    "ecr:BatchGetImage",
-                    "ecr:BatchCheckLayerAvailability",
-                    "ecr:PutImage",
-                    "ecr:InitiateLayerUpload",
-                    "ecr:UploadLayerPart",
-                    "ecr:CompleteLayerUpload"
+                {
+                    "Action": [
+                        "ecr:GetDownloadUrlForLayer",
+                        "ecr:BatchGetImage",
+                        "ecr:BatchCheckLayerAvailability",
+                        "ecr:PutImage",
+                        "ecr:InitiateLayerUpload",
+                        "ecr:UploadLayerPart",
+                        "ecr:CompleteLayerUpload"
                 ],
-                    "Resource": Join('', ['arn:aws:ecr:', region, ':', account, ':repository/', ml_docker_registry_name.lower()]),
+                    "Resource": Join('', ['arn:aws:ecr:', region, ':', account, ':repository/',
+                                          ml_docker_registry_name.lower()]),
                     "Effect": "Allow"
                 },
                 {
-                      "Action": [
+                    "Action": [
                         "logs:CreateLogGroup",
                         "logs:CreateLogStream",
                         "logs:PutLogEvents",
                         "logs:DescribeLogStreams"
                     ],
-                      "Resource": ["arn:aws:logs:*:*:*"],
+                    "Resource": ["arn:aws:logs:*:*:*"],
                     "Effect": "Allow"
-                  }
+                }
             ]
         })],
     AssumeRolePolicyDocument={
@@ -202,91 +205,6 @@ CodepipelineExecutionRole = t.add_resource(Role(
             }
         }]
     },
-))
-
-
-
-LambdaExecutionRole = t.add_resource(Role(
-    "LambdaExecutionRole",
-    Path="/",
-    Policies=[Policy(
-        PolicyName=lambda_function_name,
-        PolicyDocument={
-            "Version": "2012-10-17",
-            "Statement": [{
-                "Action": ["logs:*"],
-                "Resource": "arn:aws:logs:*:*:*",
-                "Effect": "Allow"
-            },
-                {
-                    "Action": ["kms:Decrypt"],
-                    "Resource": GetAtt(project_kms_key, "Arn"),
-                    "Effect": "Allow"
-                },
-                {
-                    "Action": ["codepipeline:PutJobFailureResult",
-                               "codepipeline:PutJobSuccessResult"],
-                    "Resource": "*",
-                    "Effect": "Allow"
-                },
-                {
-                    "Action": ["s3:GetObject"],
-                    "Resource": Join('', [GetAtt("CodePipelineBucket", "Arn"), "/*"]),
-                    "Effect": "Allow"
-                },
-                {
-                    "Action": ["sagemaker:CreateTrainingJob"],
-                    "Resource": "*",
-                    "Effect": "Allow"
-                },
-{
-                    "Action": ["iam:PassRole"],
-                    "Resource": "*",
-                    "Effect": "Allow"
-                }
-            ]
-        })],
-    AssumeRolePolicyDocument={
-        "Version": "2012-10-17",
-        "Statement": [{
-            "Action": ["sts:AssumeRole"],
-            "Effect": "Allow",
-            "Principal": {
-                "Service": ["lambda.amazonaws.com"]
-            }
-        }]
-    },
-))
-
-lambda_env = Lambda_Environment(Variables={'App_bundle': pipeline_artificat_store_name})
-
-func = t.add_resource(Function(
-    lambda_function_name,
-    Code=Code(
-        S3Bucket=lambda_function_bucket,
-        S3Key=lambda_function_key
-    ),
-    FunctionName=lambda_function_name,
-    Handler="sageDispatch.lambda_handler",
-    Role=GetAtt("LambdaExecutionRole", "Arn"),
-    Runtime="python2.7",
-    Environment=lambda_env,
-    Timeout=300
-))
-
-MemorySize = t.add_parameter(Parameter(
-    'LambdaMemorySize',
-    Type=NUMBER,
-    Description='Amount of memory to allocate to the Lambda Function',
-    Default='128',
-    AllowedValues=MEMORY_VALUES
-))
-
-Timeout = t.add_parameter(Parameter(
-    'LambdaTimeout',
-    Type=NUMBER,
-    Description='Timeout in seconds for the Lambda function',
-    Default='60'
 ))
 
 source_action_id = ActionTypeID(
@@ -368,30 +286,28 @@ pipeline = t.add_resource(Pipeline(
     Stages=[source_stage, build_stage, invoke_action]))
 
 cw_event_pattern = {
-        "source": [
-            "aws.codecommit"
+    "source": [
+        "aws.codecommit"
+    ],
+    "resources": [
+        GetAtt("Repository", "Arn")
+    ],
+    "detail-type": [
+        "CodeCommit Repository State Change"
+    ],
+    "detail": {
+        "event": [
+            "referenceCreated",
+            "referenceUpdated"
         ],
-        "resources": [
-            GetAtt("Repository", "Arn")
+        "referenceType": [
+            "branch"
         ],
-        "detail-type": [
-            "CodeCommit Repository State Change"
-        ],
-        "detail": {
-            "event": [
-              "referenceCreated",
-              "referenceUpdated"
-            ],
-            "referenceType": [
-              "branch"
-            ],
-            "referenceName": [
-              "master"
-            ]
-          }
+        "referenceName": [
+            "master"
+        ]
     }
-
-
+}
 
 CloudWatchEventExecutionRole = t.add_resource(Role(
     "CloudWatchEventExecutionRole",
@@ -404,7 +320,7 @@ CloudWatchEventExecutionRole = t.add_resource(Role(
                 "Action": "codepipeline:StartPipelineExecution",
                 "Resource": Join('', ['arn:aws:codepipeline:', region, ':', account, ':', Ref(pipeline)]),
                 "Effect": "Allow"
-                }
+            }
             ]
         })],
     AssumeRolePolicyDocument={
@@ -420,18 +336,186 @@ CloudWatchEventExecutionRole = t.add_resource(Role(
 ))
 
 cw_rule_target = Target(
-        Arn=Join('', ["arn:aws:codepipeline:", region, ':', account, ':', Ref(pipeline)]),
-        Id='mlTargert1',
-        RoleArn=GetAtt("CloudWatchEventExecutionRole", "Arn")
+    Arn=Join('', ["arn:aws:codepipeline:", region, ':', account, ':', Ref(pipeline)]),
+    Id='mlTargert1',
+    RoleArn=GetAtt("CloudWatchEventExecutionRole", "Arn")
 )
 
 pipeline_cw_rule = t.add_resource(Rule(
-        'mlpipelinerule',
-        Description='Triggers codepipeline',
-        EventPattern=cw_event_pattern,
-        State='ENABLED',
-        Targets=[cw_rule_target]
+    'mlpipelinerule',
+    Description='Triggers codepipeline',
+    EventPattern=cw_event_pattern,
+    State='ENABLED',
+    Targets=[cw_rule_target]
 
+))
+
+SagemakerExecutionRole = t.add_resource(Role(
+    "SagemakerExecutionRole",
+    Path="/",
+    Policies=[Policy(
+        PolicyName="SagemakerExecutionRole",
+        PolicyDocument={
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Action": ["kms:Decrypt"],
+                "Resource": GetAtt(project_kms_key, "Arn"),
+                "Effect": "Allow"
+            },
+                {
+                    "Action": [
+                        "s3:GetObject",
+                        "s3:PutObject",
+                        "s3:DeleteObject",
+                        "s3:GetBucketLocation",
+                        "s3:ListBucket"
+                    ],
+                    "Resource": [
+                        Join('', [GetAtt("InputBucket", "Arn"), "/*"]),
+                        Join('', [GetAtt("OutputBucket", "Arn"), "/*"])
+                    ],
+                    "Effect": "Allow"
+                },
+                {
+                    "Action": [
+                        "ecr:GetAuthorizationToken",
+                        "ecr:GetDownloadUrlForLayer",
+                        "ecr:BatchGetImage",
+                        "ecr:BatchCheckLayerAvailability"
+                    ],
+                    "Resource": Join('', ['arn:aws:ecr:', region, ':', account, ':repository/',
+                                          ml_docker_registry_name.lower()]),
+                    "Effect": "Allow"
+                },
+{
+                    "Action": [
+                        "cloudwatch:PutMetricData"
+                    ],
+                    "Resource": "*",
+                    "Effect": "Allow"
+                },
+                {
+                    "Action": [
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:DescribeLogStreams",
+                        "logs:GetLogEvents",
+                        "logs:PutLogEvents"
+                    ],
+                    "Resource": ["arn:aws:logs:*:*:*"],
+                    "Effect": "Allow"
+                }
+            ]
+        })],
+    AssumeRolePolicyDocument={
+        "Version": "2012-10-17",
+        "Statement": [{
+            "Action": ["sts:AssumeRole"],
+            "Effect": "Allow",
+            "Principal": {
+                "Service": ["sagemaker.amazonaws.com"]
+            }
+        }]
+    },
+))
+
+LambdaExecutionRole = t.add_resource(Role(
+    "LambdaExecutionRole",
+    Path="/",
+    Policies=[Policy(
+        PolicyName=lambda_function_name,
+        PolicyDocument={
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Action": ["logs:*"],
+                "Resource": "arn:aws:logs:*:*:*",
+                "Effect": "Allow"
+            },
+                {
+                    "Action": ["kms:Decrypt"],
+                    "Resource": GetAtt(project_kms_key, "Arn"),
+                    "Effect": "Allow"
+                },
+                {
+                    "Action": ["codepipeline:PutJobFailureResult",
+                               "codepipeline:PutJobSuccessResult"],
+                    "Resource": "*",
+                    "Effect": "Allow"
+                },
+                {
+                    "Action": [
+                        "codecommit:GetBranch"
+                    ],
+                    "Resource": [GetAtt("Repository", "Arn")],
+                    "Effect": "Allow"
+                },
+                {
+                    "Action": ["s3:GetObject"],
+                    "Resource": Join('', [GetAtt("CodePipelineBucket", "Arn"), "/*"]),
+                    "Effect": "Allow"
+                },
+                {
+                    "Action": ["sagemaker:CreateTrainingJob"],
+                    "Resource": "*",
+                    "Effect": "Allow"
+                },
+                {
+                    "Action": ["iam:PassRole"],
+                    "Resource": "*",
+                    "Effect": "Allow"
+                }
+            ]
+        })],
+    AssumeRolePolicyDocument={
+        "Version": "2012-10-17",
+        "Statement": [{
+            "Action": ["sts:AssumeRole"],
+            "Effect": "Allow",
+            "Principal": {
+                "Service": ["lambda.amazonaws.com"]
+            }
+        }]
+    },
+))
+
+lambda_env = Lambda_Environment(Variables={
+    'APP_BUNDLE': pipeline_artificat_store_name,
+    'CODE_COMMIT_REPO': repo_name,
+    'TRAINING_IMAGE': ml_docker_registry_name,
+    'SAGEMAKER_ROLE_ARN': GetAtt("SagemakerExecutionRole", "Arn"),
+    'INPUT_BUCKET': 's3://' + input_bucket.lower() + '/',
+    'BUCKET_KEY_ARN': GetAtt("project_kms_key", "Arn"),
+    'OUTPUT_BUCKET': 's3://' + output_bucket.lower() + '/'
+}
+)
+
+func = t.add_resource(Function(
+    lambda_function_name,
+    Code=Code(
+        S3Bucket=lambda_function_bucket,
+        S3Key=lambda_function_key
+    ),
+    FunctionName=lambda_function_name,
+    Handler="sageDispatch.lambda_handler",
+    Role=GetAtt("LambdaExecutionRole", "Arn"),
+    Runtime="python2.7",
+    Environment=lambda_env,
+    Timeout=300
+))
+
+MemorySize = t.add_parameter(Parameter(
+    'LambdaMemorySize',
+    Type=NUMBER,
+    Description='Amount of memory to allocate to the Lambda Function',
+    Default='128',
+    AllowedValues=MEMORY_VALUES
+))
+
+Timeout = t.add_parameter(Parameter(
+    'LambdaTimeout',
+    Type=NUMBER,
+    Description='Timeout in seconds for the Lambda function',
+    Default='60'
 ))
 
 print(t.to_json())

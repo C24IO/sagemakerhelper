@@ -10,18 +10,15 @@ s3 = boto3.client('s3')
 sagemaker = boto3.client('sagemaker')
 codecommit = boto3.client('codecommit')
 
+
 def lambda_handler(event, context):
   #print event
   job_id = event['CodePipeline.job']['id']
-  execution_id = code_pipeline.get_pipeline_state(name='ml_docker_pipeline')['stageStates'][0]['latestExecution']['pipelineExecutionId']
-  commitId = codecommit.get_branch(repositoryName='ml_docker_repo',branchName='master')['branch']['commitId']
   try:
     job_data = event['CodePipeline.job']['data']
     artifacts = job_data['inputArtifacts']
     print artifacts
     manifest = get_manifest_dictionary(artifacts)
-    manifest['Tags']=[{'Key':'job_id','Value':execution_id}]
-    manifest['AlgorithmSpecification']['TrainingImage'] = manifest['AlgorithmSpecification']['TrainingImage'] + ":" + commitId
     result = send_to_training(manifest)
     if 'TrainingJobArn' in result:
       put_job_success(job_id, 'started job: ' + result['TrainingJobArn'])
@@ -32,16 +29,38 @@ def lambda_handler(event, context):
 
 def send_to_training(manifest):
   suffix = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
+  commit_id = codecommit.get_branch(repositoryName=os.environ['CODE_COMMIT_REPO'], branchName='master')['branch'][
+    'commitId']
+
   response = sagemaker.create_training_job(
     TrainingJobName=manifest['TrainingJobName'] + "-" + suffix,
     HyperParameters=manifest['HyperParameters'],
-    AlgorithmSpecification=manifest['AlgorithmSpecification'],
-    RoleArn=manifest['RoleArn'],
-    InputDataConfig=manifest['InputDataConfig'],
-    OutputDataConfig=manifest['OutputDataConfig'],
+    AlgorithmSpecification={
+      'TrainingInputMode': 'File',
+      'TrainingImage': os.environ['TRAINING_IMAGE'] + ":" + commit_id
+    },
+    RoleArn=os.environ['SAGEMAKER_ROLE_ARN'],
+    InputDataConfig=[
+        {
+            "CompressionType": "None",
+            "ChannelName": "train",
+            "DataSource": {
+                "S3DataSource": {
+                    "S3DataType": "S3Prefix",
+                    "S3DataDistributionType": "FullyReplicated",
+                    "S3Uri": os.environ['INPUT_BUCKET']
+                }
+            },
+            "RecordWrapperType": "None"
+        }
+    ],
+    OutputDataConfig={
+        "KmsKeyId": os.environ['BUCKET_KEY_ARN'].split('/')[-1],
+        "S3OutputPath": os.environ['OUTPUT_BUCKET']
+    },
     ResourceConfig=manifest['ResourceConfig'],
     StoppingCondition=manifest['StoppingCondition'],
-    Tags=manifest['Tags']
+    Tags=[{'Key':'commitID','Value':commit_id}]
     )
   return response
 
@@ -51,7 +70,7 @@ def get_manifest_dictionary(artifacts):
   manifiest_object = ''
   manifest_file = ''
   for artifact in artifacts:
-    if os.environ['App_bundle'] in artifact['name']:
+    if os.environ['APP_BUNDLE'] in artifact['name']:
       manifiest_bucket = artifact['location']['s3Location']['bucketName']
       manifiest_key = artifact['location']['s3Location']['objectKey']
       manifest_file = get_manifest_from_s3(manifiest_bucket, manifiest_key)
@@ -66,31 +85,11 @@ def get_manifest_from_s3(bucket, key):
       return zip.read('manifest.json')
 
 def put_job_success(job, message):
-  """Notify CodePipeline of a successful job
-
-  Args:
-      job: The CodePipeline job ID
-      message: A message to be logged relating to the job status
-
-  Raises:
-      Exception: Any exception thrown by .put_job_success_result()
-
-  """
   print('Putting job success')
   print(message)
   code_pipeline.put_job_success_result(jobId=job)
 
 def put_job_failure(job, message):
-  """Notify CodePipeline of a failed job
-
-  Args:
-      job: The CodePipeline job ID
-      message: A message to be logged relating to the job status
-
-  Raises:
-      Exception: Any exception thrown by .put_job_failure_result()
-
-  """
   print('Putting job failure')
   print(message)
   code_pipeline.put_job_failure_result(jobId=job, failureDetails={'message': message, 'type': 'JobFailed'})
