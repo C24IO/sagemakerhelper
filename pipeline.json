@@ -1,25 +1,5 @@
 {
     "Description": "This template hydrates a machine learning pipeline.",
-    "Outputs": {
-        "InputBucket": {
-            "Description": "Name of input S3 bucket",
-            "Value": {
-                "Ref": "InputBucket"
-            }
-        },
-        "OutputBucket": {
-            "Description": "Name of output S3 bucket",
-            "Value": {
-                "Ref": "OutputBucket"
-            }
-        },
-        "Repository": {
-            "Description": "ML repo",
-            "Value": {
-                "Ref": "Repository"
-            }
-        }
-    },
     "Parameters": {
         "LambdaMemorySize": {
             "AllowedValues": [
@@ -81,7 +61,7 @@
         }
     },
     "Resources": {
-        "007038732177cloudMlPipelineBuild": {
+        "007038732177censusbuild": {
             "Properties": {
                 "Artifacts": {
                     "Type": "CODEPIPELINE"
@@ -102,7 +82,7 @@
                         {
                             "Name": "IMAGE_REPO_NAME",
                             "Type": "PLAINTEXT",
-                            "Value": "007038732177cloudmlpipelineregistry"
+                            "Value": "007038732177censusregistry"
                         },
                         {
                             "Name": "IMAGE_TAG",
@@ -112,13 +92,13 @@
                         {
                             "Name": "CODE_COMMIT_REPO",
                             "Type": "PLAINTEXT",
-                            "Value": "007038732177cloudMlPipelineRepo"
+                            "Value": "007038732177censusrepo"
                         }
                     ],
                     "Image": "aws/codebuild/docker:17.09.0",
                     "Type": "LINUX_CONTAINER"
                 },
-                "Name": "007038732177cloudMlPipelineBuild",
+                "Name": "007038732177censusbuild",
                 "ServiceRole": {
                     "Fn::GetAtt": [
                         "CodepipelineExecutionRole",
@@ -131,10 +111,10 @@
             },
             "Type": "AWS::CodeBuild::Project"
         },
-        "007038732177cloudMlPipelinePipeline": {
+        "007038732177censuspipeline": {
             "Properties": {
                 "ArtifactStore": {
-                    "Location": "007038732177cloudmlpipelineartifactstore",
+                    "Location": "007038732177censusartifactstore",
                     "Type": "S3"
                 },
                 "RoleArn": {
@@ -156,7 +136,7 @@
                                 "Configuration": {
                                     "BranchName": "master",
                                     "PollForSourceChanges": "false",
-                                    "RepositoryName": "007038732177cloudMlPipelineRepo"
+                                    "RepositoryName": "007038732177censusrepo"
                                 },
                                 "InputArtifacts": [],
                                 "Name": "Source",
@@ -180,7 +160,7 @@
                                     "Version": "1"
                                 },
                                 "Configuration": {
-                                    "ProjectName": "007038732177cloudMlPipelineBuild"
+                                    "ProjectName": "007038732177censusbuild"
                                 },
                                 "InputArtifacts": [
                                     {
@@ -226,9 +206,9 @@
             },
             "Type": "AWS::CodePipeline::Pipeline"
         },
-        "007038732177cloudMlPipelineRegistry": {
+        "007038732177censusregistry": {
             "Properties": {
-                "RepositoryName": "007038732177cloudmlpipelineregistry"
+                "RepositoryName": "007038732177censusregistry"
             },
             "Type": "AWS::ECR::Repository"
         },
@@ -268,7 +248,7 @@
                                                 "007038732177",
                                                 ":",
                                                 {
-                                                    "Ref": "007038732177cloudMlPipelinePipeline"
+                                                    "Ref": "007038732177censuspipeline"
                                                 }
                                             ]
                                         ]
@@ -292,7 +272,7 @@
                             "ServerSideEncryptionByDefault": {
                                 "KMSMasterKeyID": {
                                     "Fn::GetAtt": [
-                                        "cloudMlPipelineKey",
+                                        "censuskey",
                                         "Arn"
                                     ]
                                 },
@@ -301,7 +281,7 @@
                         }
                     ]
                 },
-                "BucketName": "007038732177cloudmlpipelineartifactstore"
+                "BucketName": "007038732177censusartifactstore"
             },
             "Type": "AWS::S3::Bucket"
         },
@@ -336,7 +316,7 @@
                                     "Effect": "Allow",
                                     "Resource": {
                                         "Fn::GetAtt": [
-                                            "cloudMlPipelineKey",
+                                            "censuskey",
                                             "Arn"
                                         ]
                                     }
@@ -468,7 +448,7 @@
                                                 ":",
                                                 "007038732177",
                                                 ":repository/",
-                                                "007038732177cloudmlpipelineregistry"
+                                                "007038732177censusregistry"
                                             ]
                                         ]
                                     }
@@ -503,7 +483,7 @@
                             "ServerSideEncryptionByDefault": {
                                 "KMSMasterKeyID": {
                                     "Fn::GetAtt": [
-                                        "cloudMlPipelineKey",
+                                        "censuskey",
                                         "Arn"
                                     ]
                                 },
@@ -512,7 +492,7 @@
                         }
                     ]
                 },
-                "BucketName": "007038732177cloudmlpipelineinput"
+                "BucketName": "007038732177censusinput"
             },
             "Type": "AWS::S3::Bucket"
         },
@@ -553,7 +533,7 @@
                                     "Effect": "Allow",
                                     "Resource": {
                                         "Fn::GetAtt": [
-                                            "cloudMlPipelineKey",
+                                            "censuskey",
                                             "Arn"
                                         ]
                                     }
@@ -565,6 +545,20 @@
                                     ],
                                     "Effect": "Allow",
                                     "Resource": "*"
+                                },
+                                {
+                                    "Action": [
+                                        "codecommit:GetBranch"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": [
+                                        {
+                                            "Fn::GetAtt": [
+                                                "Repository",
+                                                "Arn"
+                                            ]
+                                        }
+                                    ]
                                 },
                                 {
                                     "Action": [
@@ -618,7 +612,7 @@
                             "ServerSideEncryptionByDefault": {
                                 "KMSMasterKeyID": {
                                     "Fn::GetAtt": [
-                                        "cloudMlPipelineKey",
+                                        "censuskey",
                                         "Arn"
                                     ]
                                 },
@@ -627,20 +621,162 @@
                         }
                     ]
                 },
-                "BucketName": "007038732177cloudmlpipelineoutput"
+                "BucketName": "007038732177censusoutput"
             },
             "Type": "AWS::S3::Bucket"
         },
         "Repository": {
             "Properties": {
                 "RepositoryDescription": "ML repo",
-                "RepositoryName": "007038732177cloudMlPipelineRepo"
+                "RepositoryName": "007038732177censusrepo"
             },
             "Type": "AWS::CodeCommit::Repository"
         },
-        "cloudMlPipelineKey": {
+        "SagemakerExecutionRole": {
             "Properties": {
-                "Description": "cloudMlPipelineKey",
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "sagemaker.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "kms:Decrypt",
+                                        "kms:GenerateDataKey"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": {
+                                        "Fn::GetAtt": [
+                                            "censuskey",
+                                            "Arn"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "Action": [
+                                        "s3:GetObject",
+                                        "s3:PutObject",
+                                        "s3:DeleteObject"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": [
+                                        {
+                                            "Fn::Join": [
+                                                "",
+                                                [
+                                                    {
+                                                        "Fn::GetAtt": [
+                                                            "InputBucket",
+                                                            "Arn"
+                                                        ]
+                                                    },
+                                                    "/*"
+                                                ]
+                                            ]
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                "",
+                                                [
+                                                    {
+                                                        "Fn::GetAtt": [
+                                                            "OutputBucket",
+                                                            "Arn"
+                                                        ]
+                                                    },
+                                                    "/*"
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "Action": [
+                                        "s3:CreateBucket",
+                                        "s3:GetBucketLocation",
+                                        "s3:ListBucket",
+                                        "s3:ListAllMyBuckets"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Action": [
+                                        "ecr:GetAuthorizationToken",
+                                        "ecr:GetDownloadUrlForLayer",
+                                        "ecr:BatchGetImage",
+                                        "ecr:BatchCheckLayerAvailability"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": {
+                                        "Fn::Join": [
+                                            "",
+                                            [
+                                                "arn:aws:ecr:",
+                                                "us-west-2",
+                                                ":",
+                                                "007038732177",
+                                                ":repository/",
+                                                "007038732177censusregistry"
+                                            ]
+                                        ]
+                                    }
+                                },
+                                {
+                                    "Action": [
+                                        "ecr:GetAuthorizationToken"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Action": [
+                                        "cloudwatch:PutMetricData"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Action": [
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:DescribeLogStreams",
+                                        "logs:GetLogEvents",
+                                        "logs:PutLogEvents"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": [
+                                        "arn:aws:logs:*:*:*"
+                                    ]
+                                }
+                            ],
+                            "Version": "2012-10-17"
+                        },
+                        "PolicyName": "SagemakerExecutionRole"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "censuskey": {
+            "Properties": {
+                "Description": "censuskey",
                 "EnableKeyRotation": "true",
                 "Enabled": "true",
                 "KeyPolicy": {
@@ -705,7 +841,7 @@
                                     "007038732177",
                                     ":",
                                     {
-                                        "Ref": "007038732177cloudMlPipelinePipeline"
+                                        "Ref": "007038732177censuspipeline"
                                     }
                                 ]
                             ]
@@ -730,7 +866,23 @@
                 },
                 "Environment": {
                     "Variables": {
-                        "App_bundle": "source_action_output"
+                        "APP_BUNDLE": "source_action_output",
+                        "BUCKET_KEY_ARN": {
+                            "Fn::GetAtt": [
+                                "censuskey",
+                                "Arn"
+                            ]
+                        },
+                        "CODE_COMMIT_REPO": "007038732177censusrepo",
+                        "INPUT_BUCKET": "s3://007038732177censusinput/",
+                        "OUTPUT_BUCKET": "s3://007038732177censusoutput/output/",
+                        "SAGEMAKER_ROLE_ARN": {
+                            "Fn::GetAtt": [
+                                "SagemakerExecutionRole",
+                                "Arn"
+                            ]
+                        },
+                        "TRAINING_IMAGE": "007038732177.dkr.ecr.us-west-2.amazonaws.com/007038732177censusregistry"
                     }
                 },
                 "FunctionName": "sageDispatch",

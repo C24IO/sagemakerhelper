@@ -19,12 +19,14 @@ def lambda_handler(event, context):
     artifacts = job_data['inputArtifacts']
     print artifacts
     manifest = get_manifest_dictionary(artifacts)
+    print "got manifest and sending job"
     result = send_to_training(manifest)
+    print result
     if 'TrainingJobArn' in result:
       put_job_success(job_id, 'started job: ' + result['TrainingJobArn'])
     else:
      put_job_failure(job_id, 'Sagemaker training job failed.')
-  except:
+  except Exception as e:
     code_pipeline.put_job_failure_result(jobId=job_id, failureDetails={'message': 'some sort of exception', 'type': 'JobFailed'})
 
 def send_to_training(manifest):
