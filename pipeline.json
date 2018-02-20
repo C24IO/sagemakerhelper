@@ -632,6 +632,7 @@
             "Type": "AWS::IAM::Role"
         },
         "OutputBucket": {
+            "DependsOn": "CodePipelineBucket",
             "Properties": {
                 "AccessControl": "Private",
                 "BucketEncryption": {
