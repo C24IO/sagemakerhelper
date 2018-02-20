@@ -226,7 +226,8 @@ output_bucket = t.add_resource(Bucket(
     AccessControl='Private',
     BucketName=Join("", [Ref("accountparameter"), Ref("outputbucketparameter")]),
     BucketEncryption=bucket_encryption,
-    VersioningConfiguration=VersioningConfiguration(Status='Enabled')
+    VersioningConfiguration=VersioningConfiguration(Status='Enabled'),
+    DependsOn='CodePipelineBucket'
 ))
 
 codepipeline_artifact_store_bucket = t.add_resource(Bucket(
