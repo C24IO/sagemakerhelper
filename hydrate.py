@@ -1,7 +1,7 @@
 from troposphere.constants import NUMBER
 from troposphere import Output, Ref, Template, Parameter, GetAtt, Join
 from troposphere.kms import Key
-from troposphere.s3 import Bucket, ServerSideEncryptionByDefault, BucketEncryption, ServerSideEncryptionRule
+from troposphere.s3 import Bucket, ServerSideEncryptionByDefault, BucketEncryption, ServerSideEncryptionRule, VersioningConfiguration
 from troposphere.codecommit import Repository
 from troposphere.awslambda import Function, Code, MEMORY_VALUES, Environment as Lambda_Environment
 from troposphere.iam import Role, Policy
@@ -110,10 +110,19 @@ ml_docker_registry_name_parameter = t.add_parameter(Parameter(
 lambda_function_bucket_parameter = t.add_parameter(Parameter(
     'lambdafunctionbucketparameter',
     Type='String',
-    Description='This is the name of the bucket that contains the lambda function used to send your model into sagemaker.',
+    Description='This is the name of the bucket that contains the lambda function used to send your model into SageMaker.',
     MinLength='1',
     AllowedPattern='([a-z]|[0-9])+',
     Default='lambdabucket'
+))
+
+loglevelparameter = t.add_parameter(Parameter(
+    'loglevelparameter',
+    Type='String',
+    Description='This is the logging parameter used for the lambda function used to send your model into SageMaker',
+    MinLength='1',
+    AllowedValues=['DEBUG', 'INFO','WARNING', 'ERROR','CRITICAL'],
+    Default='WARNING'
 ))
 
 # KMS key used to encrypted the input and output bucks that contain the data sets
@@ -144,7 +153,11 @@ t.add_metadata({
             },
             {
                 'Label': {'default': 'CI/CD Pipeline information'},
-                'Parameters': ['pipelinenameparameter', 'reponameparameter', 'mldockerregistrynameparameter', 'lambdafunctionbucketparameter']
+                'Parameters': ['pipelinenameparameter', 'reponameparameter', 'mldockerregistrynameparameter']
+            },
+{
+                'Label': {'default': 'Lambda function information'},
+                'Parameters': ['lambdafunctionbucketparameter', 'loglevelparameter']
             }
         ],
         'ParameterLabels': {
@@ -157,7 +170,8 @@ t.add_metadata({
             'pipelinenameparameter': {'default': 'Name of the CodePipeline pipeline'},
             'reponameparameter': {'default': 'Name of the CodeCommit repo'},
             'mldockerregistrynameparameter': {'default': 'Name of the ECR registry'},
-            'lambdafunctionbucketparameter': {'default': 'Name of the S3 bucket that contains the lambda function zip file called sageDispatch.zip.'}
+            'lambdafunctionbucketparameter': {'default': 'Name of the S3 bucket that contains the lambda function zip file called sageDispatch.zip.'},
+            'loglevelparameter': {'default': 'The Lambda logging level to use for this function. Default is set to Warning.'}
         }
     }
 })
@@ -183,19 +197,45 @@ project_key = t.add_resource(Key('projectkey',
                                  }
                                  ))
 
-#Add buckets to the template
-bucket_encryption_config = ServerSideEncryptionByDefault(KMSMasterKeyID=GetAtt('projectkey', "Arn"),
-                                                         SSEAlgorithm='aws:kms')
+#Encryption configs for input and output buckets
+bucket_encryption_config = ServerSideEncryptionByDefault(
+    KMSMasterKeyID=GetAtt('projectkey', "Arn"),
+    SSEAlgorithm='aws:kms')
+
 bucket_encryption_rule = ServerSideEncryptionRule(ServerSideEncryptionByDefault=bucket_encryption_config)
 bucket_encryption = BucketEncryption(ServerSideEncryptionConfiguration=[bucket_encryption_rule])
 
-input_bucket = t.add_resource(
-    Bucket('InputBucket', AccessControl='Private', BucketName=Join("", [Ref("accountparameter"), Ref("inputbucketparameter")]), BucketEncryption=bucket_encryption))
-output_bucket = t.add_resource(Bucket('OutputBucket', AccessControl='Private', BucketName=Join("", [Ref("accountparameter"), Ref("outputbucketparameter")]),
-                                      BucketEncryption=bucket_encryption))
-codepipeline_artifact_store_bucket = t.add_resource(
-    Bucket('CodePipelineBucket', AccessControl='Private', BucketName=Join('', [Ref('accountparameter'), Ref('projectnameparameter'), 'artifactstore']),
-           BucketEncryption=bucket_encryption))
+#Encryption configs for codepipeline bucket
+cp_bucket_encryption_config = ServerSideEncryptionByDefault(
+    SSEAlgorithm='AES256')
+
+cp_bucket_encryption_rule = ServerSideEncryptionRule(ServerSideEncryptionByDefault=cp_bucket_encryption_config)
+cp_bucket_encryption = BucketEncryption(ServerSideEncryptionConfiguration=[cp_bucket_encryption_rule])
+
+
+input_bucket = t.add_resource(Bucket(
+    'InputBucket',
+    AccessControl='Private',
+    BucketName=Join("", [Ref("accountparameter"), Ref("inputbucketparameter")]),
+    BucketEncryption=bucket_encryption,
+    VersioningConfiguration=VersioningConfiguration(Status='Enabled')
+))
+
+output_bucket = t.add_resource(Bucket(
+    'OutputBucket',
+    AccessControl='Private',
+    BucketName=Join("", [Ref("accountparameter"), Ref("outputbucketparameter")]),
+    BucketEncryption=bucket_encryption,
+    VersioningConfiguration=VersioningConfiguration(Status='Enabled')
+))
+
+codepipeline_artifact_store_bucket = t.add_resource(Bucket(
+    'CodePipelineBucket',
+    AccessControl='Private',
+    BucketName=Join('', [Ref('accountparameter'), Ref('projectnameparameter'), 'artifactstore']),
+    BucketEncryption=cp_bucket_encryption
+
+))
 
 # Add ecr repo to the cfn template
 ml_docker_repo = t.add_resource(Docker_Repo('mlrepo', RepositoryName=Ref('mldockerregistrynameparameter')))
@@ -627,7 +667,19 @@ LambdaExecutionRole = t.add_resource(Role(
                 },
                 {
                     "Action": ["s3:GetObject"],
-                    "Resource": Join('', [GetAtt("CodePipelineBucket", "Arn"), "/*"]),
+                    "Resource": [
+                        Join('', [GetAtt("CodePipelineBucket", "Arn"), "/*"]),
+                        Join('', [GetAtt("InputBucket", "Arn"), "/*"])
+                    ],
+                    "Effect": "Allow"
+                },
+                {
+                    "Action": [
+                        "s3:GetObjectVersion"
+                    ],
+                    "Resource": [
+                        Join('', [GetAtt("InputBucket", "Arn"), "/*"])
+                    ],
                     "Effect": "Allow"
                 },
                 {
@@ -663,7 +715,8 @@ lambda_env = Lambda_Environment(Variables={
     'SAGEMAKER_ROLE_ARN': GetAtt("SagemakerExecutionRole", "Arn"),
     'INPUT_BUCKET': Join('', ['s3://', Ref('InputBucket'), '/']),
     'BUCKET_KEY_ARN': GetAtt('projectkey', "Arn"),
-    'OUTPUT_BUCKET': Join('', ['s3://', Ref('OutputBucket'), '/output/'])
+    'OUTPUT_BUCKET': Join('', ['s3://', Ref('OutputBucket'), '/output/']),
+    'LOG_LEVEL': Ref('loglevelparameter')
 }
 )
 

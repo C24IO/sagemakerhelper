@@ -37,8 +37,16 @@
                     "Parameters": [
                         "pipelinenameparameter",
                         "reponameparameter",
-                        "mldockerregistrynameparameter",
-                        "lambdafunctionbucketparameter"
+                        "mldockerregistrynameparameter"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "Lambda function information"
+                    },
+                    "Parameters": [
+                        "lambdafunctionbucketparameter",
+                        "loglevelparameter"
                     ]
                 }
             ],
@@ -51,6 +59,9 @@
                 },
                 "lambdafunctionbucketparameter": {
                     "default": "Name of the S3 bucket that contains the lambda function zip file called sageDispatch.zip."
+                },
+                "loglevelparameter": {
+                    "default": "The Lambda logging level to use for this function. Default is set to Warning."
                 },
                 "mldockerregistrynameparameter": {
                     "default": "Name of the ECR registry"
@@ -92,7 +103,20 @@
         "lambdafunctionbucketparameter": {
             "AllowedPattern": "([a-z]|[0-9])+",
             "Default": "lambdabucket",
-            "Description": "This is the name of the bucket that contains the lambda function used to send your model into sagemaker.",
+            "Description": "This is the name of the bucket that contains the lambda function used to send your model into SageMaker.",
+            "MinLength": "1",
+            "Type": "String"
+        },
+        "loglevelparameter": {
+            "AllowedValues": [
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"
+            ],
+            "Default": "WARNING",
+            "Description": "This is the logging parameter used for the lambda function used to send your model into SageMaker",
             "MinLength": "1",
             "Type": "String"
         },
@@ -208,13 +232,7 @@
                     "ServerSideEncryptionConfiguration": [
                         {
                             "ServerSideEncryptionByDefault": {
-                                "KMSMasterKeyID": {
-                                    "Fn::GetAtt": [
-                                        "projectkey",
-                                        "Arn"
-                                    ]
-                                },
-                                "SSEAlgorithm": "aws:kms"
+                                "SSEAlgorithm": "AES256"
                             }
                         }
                     ]
@@ -461,6 +479,9 @@
                             }
                         ]
                     ]
+                },
+                "VersioningConfiguration": {
+                    "Status": "Enabled"
                 }
             },
             "Type": "AWS::S3::Bucket"
@@ -534,20 +555,58 @@
                                         "s3:GetObject"
                                     ],
                                     "Effect": "Allow",
-                                    "Resource": {
-                                        "Fn::Join": [
-                                            "",
-                                            [
-                                                {
-                                                    "Fn::GetAtt": [
-                                                        "CodePipelineBucket",
-                                                        "Arn"
-                                                    ]
-                                                },
-                                                "/*"
+                                    "Resource": [
+                                        {
+                                            "Fn::Join": [
+                                                "",
+                                                [
+                                                    {
+                                                        "Fn::GetAtt": [
+                                                            "CodePipelineBucket",
+                                                            "Arn"
+                                                        ]
+                                                    },
+                                                    "/*"
+                                                ]
                                             ]
-                                        ]
-                                    }
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                "",
+                                                [
+                                                    {
+                                                        "Fn::GetAtt": [
+                                                            "InputBucket",
+                                                            "Arn"
+                                                        ]
+                                                    },
+                                                    "/*"
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "Action": [
+                                        "s3:GetObjectVersion"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": [
+                                        {
+                                            "Fn::Join": [
+                                                "",
+                                                [
+                                                    {
+                                                        "Fn::GetAtt": [
+                                                            "InputBucket",
+                                                            "Arn"
+                                                        ]
+                                                    },
+                                                    "/*"
+                                                ]
+                                            ]
+                                        }
+                                    ]
                                 },
                                 {
                                     "Action": [
@@ -602,6 +661,9 @@
                             }
                         ]
                     ]
+                },
+                "VersioningConfiguration": {
+                    "Status": "Enabled"
                 }
             },
             "Type": "AWS::S3::Bucket"
@@ -1070,6 +1132,9 @@
                                     "/"
                                 ]
                             ]
+                        },
+                        "LOG_LEVEL": {
+                            "Ref": "loglevelparameter"
                         },
                         "OUTPUT_BUCKET": {
                             "Fn::Join": [
