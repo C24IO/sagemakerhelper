@@ -232,7 +232,13 @@
                     "ServerSideEncryptionConfiguration": [
                         {
                             "ServerSideEncryptionByDefault": {
-                                "SSEAlgorithm": "AES256"
+                                "KMSMasterKeyID": {
+                                    "Fn::GetAtt": [
+                                        "projectkey",
+                                        "Arn"
+                                    ]
+                                },
+                                "SSEAlgorithm": "aws:kms"
                             }
                         }
                     ]
@@ -452,21 +458,6 @@
         "InputBucket": {
             "Properties": {
                 "AccessControl": "Private",
-                "BucketEncryption": {
-                    "ServerSideEncryptionConfiguration": [
-                        {
-                            "ServerSideEncryptionByDefault": {
-                                "KMSMasterKeyID": {
-                                    "Fn::GetAtt": [
-                                        "projectkey",
-                                        "Arn"
-                                    ]
-                                },
-                                "SSEAlgorithm": "aws:kms"
-                            }
-                        }
-                    ]
-                },
                 "BucketName": {
                     "Fn::Join": [
                         "",
@@ -632,24 +623,8 @@
             "Type": "AWS::IAM::Role"
         },
         "OutputBucket": {
-            "DependsOn": "CodePipelineBucket",
             "Properties": {
                 "AccessControl": "Private",
-                "BucketEncryption": {
-                    "ServerSideEncryptionConfiguration": [
-                        {
-                            "ServerSideEncryptionByDefault": {
-                                "KMSMasterKeyID": {
-                                    "Fn::GetAtt": [
-                                        "projectkey",
-                                        "Arn"
-                                    ]
-                                },
-                                "SSEAlgorithm": "aws:kms"
-                            }
-                        }
-                    ]
-                },
                 "BucketName": {
                     "Fn::Join": [
                         "",
@@ -662,9 +637,6 @@
                             }
                         ]
                     ]
-                },
-                "VersioningConfiguration": {
-                    "Status": "Enabled"
                 }
             },
             "Type": "AWS::S3::Bucket"

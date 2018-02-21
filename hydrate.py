@@ -217,24 +217,23 @@ input_bucket = t.add_resource(Bucket(
     'InputBucket',
     AccessControl='Private',
     BucketName=Join("", [Ref("accountparameter"), Ref("inputbucketparameter")]),
-    BucketEncryption=bucket_encryption,
+    #BucketEncryption=cp_bucket_encryption,
     VersioningConfiguration=VersioningConfiguration(Status='Enabled')
 ))
 
 output_bucket = t.add_resource(Bucket(
     'OutputBucket',
     AccessControl='Private',
-    BucketName=Join("", [Ref("accountparameter"), Ref("outputbucketparameter")]),
-    BucketEncryption=bucket_encryption,
-    VersioningConfiguration=VersioningConfiguration(Status='Enabled'),
-    DependsOn='CodePipelineBucket'
+    BucketName=Join("", [Ref("accountparameter"), Ref("outputbucketparameter")])
+    #BucketEncryption=cp_bucket_encryption,
+    #DependsOn='CodePipelineBucket'
 ))
 
 codepipeline_artifact_store_bucket = t.add_resource(Bucket(
     'CodePipelineBucket',
     AccessControl='Private',
     BucketName=Join('', [Ref('accountparameter'), Ref('projectnameparameter'), 'artifactstore']),
-    BucketEncryption=cp_bucket_encryption
+    BucketEncryption=bucket_encryption
 
 ))
 
