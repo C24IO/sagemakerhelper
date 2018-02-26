@@ -848,7 +848,7 @@
                         "",
                         [
                             {
-                                "Ref": "accountparameter"
+                                "Ref": "projectnameparameter"
                             },
                             "build"
                         ]
@@ -1022,7 +1022,17 @@
                                     "Version": "1"
                                 },
                                 "Configuration": {
-                                    "FunctionName": "sageDispatch"
+                                    "FunctionName": {
+                                        "Fn::Join": [
+                                            "",
+                                            [
+                                                {
+                                                    "Ref": "projectnameparameter"
+                                                },
+                                                "sageDispatch"
+                                            ]
+                                        ]
+                                    }
                                 },
                                 "InputArtifacts": [
                                     {
@@ -1147,7 +1157,17 @@
                         }
                     }
                 },
-                "FunctionName": "sageDispatch",
+                "FunctionName": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "projectnameparameter"
+                            },
+                            "sageDispatch"
+                        ]
+                    ]
+                },
                 "Handler": "sageDispatch.lambda_handler",
                 "Role": {
                     "Fn::GetAtt": [

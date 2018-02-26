@@ -272,7 +272,7 @@ code_build_project = t.add_resource(Project(
     'build',
     Artifacts=code_build_artifacts,
     Environment=environment,
-    Name=Join('', [Ref('accountparameter'), 'build']),
+    Name=Join('', [Ref('projectnameparameter'), 'build']),
     ServiceRole=GetAtt("CodepipelineExecutionRole", "Arn"),
     Source=source,
 ))
@@ -442,7 +442,7 @@ build_action = Actions(
 invoke_action = Actions(
     ActionTypeId=invoke_action_id,
     Configuration={
-        "FunctionName": 'sageDispatch'
+        "FunctionName": Join("", [Ref("projectnameparameter"),'sageDispatch'])
     },
     InputArtifacts=[InputArtifacts(Name='source_action_output')],
     Name='Train',
@@ -726,13 +726,36 @@ func = t.add_resource(Function(
         S3Bucket=Ref('lambdafunctionbucketparameter'),
         S3Key='sageDispatch.zip'
     ),
-    FunctionName='sageDispatch',
+    FunctionName=Join("", [Ref("projectnameparameter"),'sageDispatch']),
     Handler="sageDispatch.lambda_handler",
     Role=GetAtt("LambdaExecutionRole", "Arn"),
     Runtime="python2.7",
     Environment=lambda_env,
     Timeout=300
 ))
+
+# t.add_output([
+#     Output(
+#         "inputbucketoutput",
+#         Description="Bucket where you must upload your training and test data",
+#         Value=GetAtt("InputBucket", "DomainName"),
+#     ),
+#     Output(
+#         "outputbucketoutput",
+#         Description="Bucket where the output of your model is persisted",
+#         Value=GetAtt("OutputBucket", "DomainName"),
+#     ),
+#     Output(
+#         "reponameoutput",
+#         Description="Repo to which you need to commit your model and its supporting files",
+#         Value=GetAtt("Repository", "Name"),
+#     ),
+#     Output(
+#         "repocloneurloutput",
+#         Description="Public DNSName of the newly created EC2 instance",
+#         Value=GetAtt("Repository", "CloneUrlHttp"),
+#     ),
+# ])
 
 # This prints out the CFN template. You could of course write this to a file but I is lazy. Oh and don't print to yaml.
 # There's either some bug with tropophere or with CF that causes templates to fail legacy parsing when submitted to CF
